@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <title></title>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.2.1/material.cyan-light_blue.min.css">
+  <link rel="stylesheet" href="//cdn.datatables.net/1.10.13/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="../css/nouislider.min.css" />
+
+  <style>
+
+  .modal-container {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow: scroll;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+    -webkit-transition: opacity 400ms ease-in;
+    -moz-transition: opacity 400ms ease-in;
+    transition: opacity 400ms ease-in;
+  }
+  .modal-container > div {
+    position: relative;
+    width: 90%;
+    max-width: 500px;
+    min-height: 25px;
+    margin: 10% auto;
+    z-index: 99999;
+    padding: 16px 16px 0;
+  }
+  .modal-button-bar {
+    text-align: right;
+    margin-top: 8px;
+  }
+  .table-row__edit-btn {
+    cursor: pointer;
+    color: #6d6e70;
+  }
+  .table-row__edit-btn:hover {
+    color: rgb(0,188,212);
+  }
+
+  .column-search {
+    width: 100%;
+  }
+  .column-search:focus {
+    outline-color: rgb(0,188,212)
+  }
+
+  /*#table-div table.dataTable { border-collapse: collapse; }
+  table.dataTable tbody td, table.dataTable tbody th { padding: .5em 1em; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box; }
+  table.dataTable tbody tr { background: none; }*/
+  table.dataTable thead .sorting_asc { background-image: url("../images/sort_asc.png"); }
+  table.dataTable thead .sorting_desc { background-image: url("../images/sort_desc.png"); }
+  .dataTables_wrapper .dataTables_paginate .paginate_button { border: none; }
+  .dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover { background: #eee; }
+  .dataTables_wrapper .dataTables_paginate .paginate_button:hover { background: #c0c0c0; }
+
+  #dataTable_length, #dataTable_info, #dataTable_paginate  {
+    font-family: inherit;
+    color: #6d6e70;
+    color: rgba(0, 0, 0, 0.65);
+  }
+
+  table.dataTable td, table.dataTable th {
+    /*line-height: 1em;
+    border: 1px solid #aaa;
+    padding: 6px 6px;*/
+  }
+  table.dataTable thead .column-search {
+    max-width: 150px;
+  }
+  table.dataTable thead th {
+    text-align: left;
+  }
+
+  .dataTables_length select {
+    background-color: transparent;
+    color: #6d6e70;
+    color: rgba(0, 0, 0, 0.65);
+    border: 1px solid rgba(0,0,0,0.1);
+    border-bottom: 1px solid rgba(0,0,0,0.5);
+  }
+  .dataTables_length select:focus {
+    outline: none
+  }
+
+  .noUi-connect {
+    background: rgba(0,188,212,0.5);
+  }
+  .noUi-handle {
+    display: none;
+  }
+  .noUi-horizontal {
+    height: 12px;
+    margin: 6px 0px;
+  }
+  .noUi-target, .noUi-connect {
+    box-shadow: none;
+  }
+  a.download {
+    text-decoration: none;
+  }
+
+  </style>
+</head>
+<body>
+
+
+  <div class="mdl-js-snackbar mdl-snackbar">
+    <div class="mdl-snackbar__text"></div>
+    <button class="mdl-snackbar__action" type="button"></button>
+  </div>
+
+  <div id="modal_add-column" class="modal-container">
+    <div class="mdl-card mdl-shadow--16dp">
+      <form class="form_type1" action="/api/tables/:tableName" method="POST">
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+          <input class="mdl-textfield__input" type="text" name="columnName" >
+          <label class="mdl-textfield__label" for="columnName">Column name...</label>
+        </div><br>
+        <label class="mdl-radio mdl-js-radio" for="columnType-1">
+          <input type="radio" id="columnType-1" class="mdl-radio__button" name="columnType" value="TEXT" checked>
+          <span class="mdl-radio__label">Text</span>
+        </label>
+        &nbsp;
+        <label class="mdl-radio mdl-js-radio" for="columnType-2">
+          <input type="radio" id="columnType-2" class="mdl-radio__button" name="columnType" value="INTEGER">
+          <span class="mdl-radio__label">Integer</span>
+        </label>
+        <div class="mdl-card__actions dialog-button-bar">
+          <button class="mdl-button mdl-button--colored mdl-js-button ">Submit</button>
+          <button class="modal-actions__cancel mdl-button mdl-js-button ">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal_add-row" class="modal-container">
+    <div class="mdl-card mdl-shadow--16dp">
+      <form class="form_type1" action="/api/tables/:tableName/rows" method="POST">
+        <div class="modal-form-fields"> <!-- ... --> </div>
+        <div class="mdl-card__actions dialog-button-bar">
+          <button class="mdl-button mdl-button--colored mdl-js-button">Submit</button>
+          <button class="modal-actions__cancel mdl-button mdl-js-button">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="modal_edit-row" class="modal-container">
+    <div class="mdl-card mdl-shadow--16dp">
+      <form class="form_type1" action="/api/tables/:tableName/rows/:rowid" method="POST">
+        <input type="hidden" name="_method" value="put" />
+        <div class="modal-form-fields"> <!-- ... --> </div>
+        <div class="mdl-card__actions dialog-button-bar">
+          <button class="mdl-button mdl-button--colored mdl-js-button">Submit</button>
+          <button class="modal-actions__cancel mdl-button mdl-js-button">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+    <header class="mdl-layout__header mdl-color--grey-100 mdl-color-text--grey-600">
+      <div class="mdl-layout__header-row">
+
+        <button id="accbtn" class="mdl-button mdl-js-button mdl-js-ripple-effect mdl-button--icon">
+          <i class="material-icons" role="presentation">arrow_drop_down</i>
+          <span class="visuallyhidden">Table actions</span>
+        </button>
+        <ul class="menu_table-actions mdl-menu mdl-menu--bottom-left mdl-js-menu mdl-js-ripple-effect" for="accbtn">
+          <li disabled class="mdl-menu__item mdl-menu__action"><i class="material-icons">sync</i> Import ODK</li>
+          <li disabled class="mdl-menu__item mdl-menu__action"><i class="material-icons">file_upload</i> Import CSV</li>
+          <a class="update-this-link download" download=":tableName.csv" href="/api/csv/:tableName">
+            <li class="mdl-menu__item mdl-menu__action"><i class="material-icons">file_download</i> Export CSV</li>
+          </a>
+          <li class="mdl-menu__item mdl-menu__action mdl-menu__item--full-bleed-divider" data-action="modal_add-column"><i class="material-icons">add_box</i> Add column</li>
+          <a class="mdl-menu__item" href="/"><i class="material-icons">home</i> Change table</a>
+        </ul>
+        &nbsp; &nbsp;
+
+        <span class="mdl-layout-title">Welcome</span>
+        <div class="mdl-layout-spacer"></div>
+        <button onClick="addRowModal();" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--raised mdl-button--colored">
+          <i class="material-icons">add</i>
+        </button>
+
+      </div>
+    </header>
+
+    <main class="mdl-layout__content">
+      <div class="mdl-cell mdl-cell--12-col">
+        <div id="table-div">
+
+        </div>
+      </div>
+    </main>
+
+  </div>
+
+
+
+
+<script src="https://code.getmdl.io/1.2.1/material.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="//cdn.datatables.net/1.10.13/js/jquery.dataTables.min.js"></script>
+<script src="../js/nouislider.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.form/3.51/jquery.form.min.js"></script> <!-- required for ajaxSubmit function -->
+<script>
+
+// TO DO
+// #####
+// don't reload whole table. just update the dataTable when adding a single entry or editing a row.
+
+// data field verification
+//    special characters and whatnot
+//    text versus integer
+// load a template
+// no data message
+// loading icon
+
+var table, slider;
+
+var notification = document.querySelector('.mdl-js-snackbar');
+function toast(text){
+  notification.MaterialSnackbar.showSnackbar( { message: text } );
+}
+
+function getParam(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+$(function () {
+  // update page elements where necessary
+  var tableName = getParam('table');
+  $(".mdl-layout-title").text(tableName);
+  $(".modal-container").each(function(index, el) {
+    var modal = $(this);
+    var action = modal.find("form").attr("action").replace(":tableName", tableName);
+    modal.find("form").attr("action", action);
+    modal.find(".modal-actions__cancel").click(function(e) {
+        e.preventDefault();
+        modal.hide();
+    });
+  });
+  $(".update-this-link").each(function(index, el) {
+    var download = $(this).attr("download").replace(":tableName", tableName);
+    $(this).attr("download", download);
+    var href = $(this).attr("href").replace(":tableName", tableName);
+    $(this).attr("href", href);
+  });
+  // build interactions
+  $(".menu_table-actions .mdl-menu__action").each(function(index, el) {
+    $(this).click(function(e) {
+      var modalId = $(this).attr("data-action");
+      $("#" + modalId).show();
+    })
+  });
+  // form submissions may need to either reload everything or just update the dataTables
+  // so split them out be class?
+  $("form.form_type1").each(function(index, el) {
+    var modal = $(this).parents(".modal-container");
+    $(this).submit(function() {
+      $(this).ajaxSubmit({
+        error: function(xhr) {
+          modal.hide();
+          toast('Error: ' + xhr.status);
+        },
+        success: function(response) {
+          modal.hide();
+          modal.find("input").val("");
+          toast(JSON.stringify(response));
+          loadTable();
+        }
+      });
+      return false;
+    });
+  });
+  // load table data
+  loadTable()
+});
+
+function addRowModal(rowid) {
+  var modal = $("#modal_add-row");
+  var tableName = getParam('table');
+  $.get('/api/tables/' + tableName, function(response){
+    modal.find('.modal-form-fields').empty();
+    for (var i = 1; i < response.length; i++) {
+      if(response[i].name !== "rowid"){
+        var fieldHtml = '<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">'+
+          '<input class="mdl-textfield__input" type="text" name="' + response[i].name + '" >'+
+          '<label class="mdl-textfield__label" for="' + response[i].name + '">' + response[i].name + '</label>'+
+        '</div><br>';
+        modal.find('.modal-form-fields').append(fieldHtml);
+      }
+    }
+    componentHandler.upgradeAllRegistered();
+    modal.show();
+  });
+}
+
+function editRow(rowid) {
+  var modal = $("#modal_edit-row");
+  var tableName = getParam('table');
+  modal.find('.modal-form-fields').empty();
+  var action = modal.find("form").attr("action").replace(":rowid", rowid);
+  modal.find("form").attr("action", action);
+  $.get('/api/tables/' + tableName + "/rows/" + rowid , function(response){
+    for (key in response) {
+      if(key !== "rowid"){
+        var fieldHtml = '<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">'+
+          '<input class="mdl-textfield__input" type="text" name="' + key + '" ';
+        fieldHtml += (response[key] !== null) ? 'value="' + response[key] + '" ' : "";
+        fieldHtml += '><label class="mdl-textfield__label" for="' + key + '">' + key + '</label>' +
+        '</div><br>';
+        modal.find('.modal-form-fields').append(fieldHtml);
+      }
+    }
+    componentHandler.upgradeAllRegistered();
+    modal.show();
+  });
+}
+
+function loadTable() {
+  var tableName = getParam('table');
+  $.get('/api/tables/' + tableName + "/rows", function(response){
+    $("#table-div").empty();
+    // render headers
+    $("#table-div").html('<table data-sortable id="dataTable" class="compact nowrap stripe cell-border" cellspacing="0"><thead><tr></tr></thead><tbody></tbody></table>');
+    var header = response[0];
+    $("#dataTable thead tr").append("<th></th>")
+    for (field in header) {
+        $("#dataTable thead tr").append('<th>' + field + ' <br><input class="column-search" type="search" placeholder="search..." /></th>');
+    }
+    // render body of table
+    var tbody = $("#dataTable tbody")[0];
+    for (var i = 0; i < response.length; i++) {
+        var tr = document.createElement("tr");
+        var editRow = document.createElement("td");
+        var editBtnHtml = '<i onClick="editRow(' + response[i].rowid + ');" class="material-icons table-row__edit-btn">edit</i>';
+        $(editRow).html(editBtnHtml);
+        tr.appendChild(editRow);
+        for (field in response[i]) {
+            var td = document.createElement("td");
+            var cell = response[i][field];
+            $(td)
+                .html(cell)
+                .attr("title", response[i][field]);
+            tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+    }
+    // initialize dataTable
+    table = $('#dataTable').DataTable({
+      scrollX: true,
+      "sDom":'lrtip',
+      "lengthMenu": [ 10, 50, 100 ],
+      "language": {
+        "lengthMenu": "Display _MENU_ records",
+        "info": "Showing _START_ to _END_ of _TOTAL_ records",
+      },
+      // first column is the edit button, so disable sort
+      "columnDefs": [
+        { "orderable": false, "targets": 0 }
+      ],
+      // dataTables will perform a first pass order during initialisation, use column 1 not column 0
+      "order": [[ 1, 'asc' ]]
+    });
+
+    // stop a click in the search input box from triggering a sort on the column
+    $('.column-search').on('click', function(e){
+      e.stopPropagation();
+    });
+
+    // initialize column search functionality
+    table.columns().every( function() {
+      var that = this;
+      $('input', this.header() ).on('keyup change', function(){
+        if( that.search() !== this.value ){
+          that
+          .search( this.value )
+          .draw();
+        }
+      });
+    });
+
+    // if too few columns the body columns center while the header rows stay left
+    // if that's the case, shrink the table wrapper
+    if($('#table-div thead').width() < $("#table-div").width()){
+      $("#table-div").width($('#table-div thead').width())
+    }
+
+    // need a custom scroll bar that is always visible
+    // so user can x-scroll the table even if they only have a mouse (i.e. no touchpad)
+    $("<div id='myslider'></div>").insertAfter(".dataTables_scroll")
+    slider = document.getElementById('myslider');
+    noUiSlider.create(slider, {
+    	start: [null, null],
+    	connect: true,
+      behaviour: "drag-fixed",
+    	range: {
+    		'min': 0,
+    		'max': 1
+    	}
+    });
+
+    function sizeSlider(){
+      var view = $(".dataTables_scrollBody").width(); // screen window width
+      var full = $("#dataTable").width(); // full width
+      // hide slider if there is no overflow
+      if(view >= full){ $(slider).hide(); } else { $(slider).show(); }
+      var viewMin = $(".dataTables_scrollBody").scrollLeft();
+      var viewMax = viewMin + view;
+      slider.noUiSlider.updateOptions({
+    		start: [viewMin, viewMax],
+        range: {
+    			'min': 0,
+    			'max': full
+    		}
+    	});
+    }
+    $(window).resize(function() {
+      sizeSlider();
+    });
+    sizeSlider();
+
+    // update the slider position when the div is scrolled via direct interaction
+    var divScroll = function(){
+      var viewMin = $(".dataTables_scrollBody").scrollLeft();
+      var view = $(".dataTables_scrollBody").width(); // visible width
+      var viewMax = viewMin + view;
+      slider.noUiSlider.set([viewMin, viewMax]);
+    }
+    $(".dataTables_scrollBody").on('scroll', divScroll);
+    // update the table view when the slider is dragged
+    slider.noUiSlider.on('slide', function(values, handle, unencoded){
+      $(".dataTables_scrollBody").off('scroll', divScroll) // turn off the direct interaction scroll listener to keep things smooth
+      $(".dataTables_scrollBody").scrollLeft(Math.round(unencoded[0])) // move the view based on the new slider position
+      $(".dataTables_scrollBody").css("overflow-x", "hidden") // prevent the browser scrollbar from showing
+    });
+    slider.noUiSlider.on('end', function(){
+      $(".dataTables_scrollBody").on('scroll', divScroll); // after done dragging the slider turn back on the direct interaction scroll listener
+      $(".dataTables_scrollBody").css("overflow-x", "auto"); // turn back on the browser scroll styling
+    })
+
+  });
+}
+
+
+</script>
+  </body>
+</html>

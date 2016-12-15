@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <title></title>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.2.1/material.cyan-light_blue.min.css">
+
+  <style>
+
+/* temporary */
+  .table-list__title {
+    padding-left: 12px;
+    font-weight: bold;
+  }
+
+/* css being used */
+  .modal-container {
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    overflow: scroll;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+    -webkit-transition: opacity 400ms ease-in;
+    -moz-transition: opacity 400ms ease-in;
+    transition: opacity 400ms ease-in;
+  }
+  .modal-container > div {
+    position: relative;
+    width: 90%;
+    max-width: 500px;
+    min-height: 25px;
+    margin: 10% auto;
+    z-index: 99999;
+    padding: 16px 16px 0;
+  }
+  .modal-button-bar {
+    text-align: right;
+    margin-top: 8px;
+  }
+
+  </style>
+</head>
+<body>
+
+
+  <div class="mdl-js-snackbar mdl-snackbar">
+    <div class="mdl-snackbar__text"></div>
+    <button class="mdl-snackbar__action" type="button"></button>
+  </div>
+
+  <div id="modal_add-table" class="modal-container">
+    <div class="mdl-card mdl-shadow--16dp">
+      <form class="form_type1" action="/api/tables/" method="POST">
+        <div class="modal-form-fields">
+          <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+            <input class="mdl-textfield__input" type="text" name="tableName" >
+            <label class="mdl-textfield__label" for="tableName">Table name...</label>
+          </div>
+        </div>
+        <div class="mdl-card__actions dialog-button-bar">
+          <button class="mdl-button mdl-button--colored mdl-js-button">Submit</button>
+          <button class="modal-actions__cancel mdl-button mdl-js-button">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+    <header class="mdl-layout__header mdl-color--grey-100 mdl-color-text--grey-600">
+      <div class="mdl-layout__header-row">
+
+        <span class="mdl-layout-title">Welcome</span>
+        <div class="mdl-layout-spacer"></div>
+        <button onClick="addTableModal();" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--raised mdl-button--colored">
+          <i class="material-icons">add</i>
+        </button>
+
+      </div>
+    </header>
+
+    <main class="mdl-layout__content">
+      <div class="mdl-grid">
+        <div id="tableList">
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+<script src="https://code.getmdl.io/1.2.1/material.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery.form/3.51/jquery.form.min.js"></script> <!-- required for ajaxSubmit function -->
+
+<script>
+
+var notification = document.querySelector('.mdl-js-snackbar');
+function toast(text){
+  notification.MaterialSnackbar.showSnackbar( { message: text } );
+}
+
+function getParam(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+
+
+$(function () {
+  // # update page elements where necessary
+  $(".modal-container").each(function(index, el) {
+    var modal = $(this);
+    modal.find(".modal-actions__cancel").click(function(e) {
+        e.preventDefault();
+        modal.hide();
+    });
+  });
+  // # build interactions
+  $("form.form_type1").each(function(index, el) {
+    var modal = $(this).parents(".modal-container");
+    $(this).submit(function() {
+      $(this).ajaxSubmit({
+        error: function(xhr) {
+          modal.hide();
+          toast('Error: ' + xhr.status);
+        },
+        success: function(response) {
+          modal.hide();
+          modal.find("input").val("");
+          toast(JSON.stringify(response));
+          loadList();
+        }
+      });
+      return false;
+    });
+  });
+
+  // load table data
+  loadList()
+
+});
+
+
+function loadList() {
+
+    $.get('/api/tables/', function(response){
+      data = response;
+      for (var i=0; i<response.length; i++) {
+        var thisHtml = '<div class="">' +
+            '<a class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" ' +
+            'href="/table/?table=' + response[i].name + '">View</a>' +
+            '<span class="table-list__title">' + response[i].name + '</span> - ' +
+            '<span class="table-list__rows">' + response[i].count + ' rows</span>' +
+        '</div>'
+        $("#tableList").append(thisHtml)
+      }
+    });
+}
+
+function addTableModal(rowid) {
+  var modal = $("#modal_add-table");
+  modal.show();
+}
+
+
+
+
+
+</script>
+  </body>
+</html>
