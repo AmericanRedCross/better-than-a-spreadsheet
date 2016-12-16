@@ -137,6 +137,11 @@
           <input type="radio" id="columnType-2" class="mdl-radio__button" name="columnType" value="INTEGER">
           <span class="mdl-radio__label">Integer</span>
         </label>
+        &nbsp;
+        <label class="mdl-radio mdl-js-radio" for="columnType-3">
+          <input type="radio" id="columnType-3" class="mdl-radio__button" name="columnType" value="REAL">
+          <span class="mdl-radio__label">Decimal</span>
+        </label>
         <div class="mdl-card__actions dialog-button-bar">
           <button class="mdl-button mdl-button--colored mdl-js-button ">Submit</button>
           <button class="modal-actions__cancel mdl-button mdl-js-button ">Cancel</button>
@@ -145,22 +150,10 @@
     </div>
   </div>
 
-  <div id="modal_add-row" class="modal-container">
-    <div class="mdl-card mdl-shadow--16dp">
-      <form class="form_type1" action="/api/tables/:tableName/rows" method="POST">
-        <div class="modal-form-fields"> <!-- ... --> </div>
-        <div class="mdl-card__actions dialog-button-bar">
-          <button class="mdl-button mdl-button--colored mdl-js-button">Submit</button>
-          <button class="modal-actions__cancel mdl-button mdl-js-button">Cancel</button>
-        </div>
-      </form>
-    </div>
-  </div>
 
-  <div id="modal_edit-row" class="modal-container">
+  <div id="modal_row" class="modal-container">
     <div class="mdl-card mdl-shadow--16dp">
-      <form class="form_type1" action="/api/tables/:tableName/rows/:rowid" method="POST">
-        <input type="hidden" name="_method" value="put" />
+      <form class="form_type1" action="/api/tables/:tableName/rows/" method="POST">
         <div class="modal-form-fields"> <!-- ... --> </div>
         <div class="mdl-card__actions dialog-button-bar">
           <button class="mdl-button mdl-button--colored mdl-js-button">Submit</button>
@@ -192,7 +185,7 @@
 
         <span class="mdl-layout-title">Welcome</span>
         <div class="mdl-layout-spacer"></div>
-        <button onClick="addRowModal();" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--raised mdl-button--colored">
+        <button onClick="editRow();" class="mdl-button mdl-js-button mdl-button--fab mdl-button--mini-fab mdl-button--raised mdl-button--colored">
           <i class="material-icons">add</i>
         </button>
 
@@ -294,44 +287,74 @@ $(function () {
   loadTable()
 });
 
-function addRowModal(rowid) {
-  var modal = $("#modal_add-row");
+function readableType(type){
+  switch (type) {
+    case "INTEGER":
+      return "(integer)";
+      break;
+    case "REAL": // "real" isn't going to make sense to the user
+      return "(decimal)";
+      break;
+    case "TEXT":
+      return "(text)";
+      break;
+    default:
+      return "";
+      break;
+  }
+}
+
+function modalRowFields(modal, cb) {
   var tableName = getParam('table');
   $.get('/api/tables/' + tableName, function(response){
-    modal.find('.modal-form-fields').empty();
     for (var i = 1; i < response.length; i++) {
       if(response[i].name !== "rowid"){
-        var fieldHtml = '<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">'+
-          '<input class="mdl-textfield__input" type="text" name="' + response[i].name + '" >'+
-          '<label class="mdl-textfield__label" for="' + response[i].name + '">' + response[i].name + '</label>'+
-        '</div><br>';
-        modal.find('.modal-form-fields').append(fieldHtml);
+        if (response[i].type === "DATETIME"){
+          // ...
+        } else {
+          var fieldHtml = '<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">'+
+            '<input class="mdl-textfield__input" data-type="' + response[i].type + '" type="text" name="' + response[i].name + '" >'+
+            '<label class="mdl-textfield__label" for="' + response[i].name + '">' + response[i].name + ' ' + readableType(response[i].type) + '</label>'+
+            '' +
+          '</div><br>';
+          modal.find('.modal-form-fields').append(fieldHtml);
+        }
       }
     }
-    componentHandler.upgradeAllRegistered();
-    modal.show();
+    cb();
   });
 }
 
 function editRow(rowid) {
-  var modal = $("#modal_edit-row");
   var tableName = getParam('table');
+  var modal = $("#modal_row");
   modal.find('.modal-form-fields').empty();
-  var action = modal.find("form").attr("action").replace(":rowid", rowid);
-  modal.find("form").attr("action", action);
-  $.get('/api/tables/' + tableName + "/rows/" + rowid , function(response){
-    for (key in response) {
-      if(key !== "rowid"){
-        var fieldHtml = '<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">'+
-          '<input class="mdl-textfield__input" type="text" name="' + key + '" ';
-        fieldHtml += (response[key] !== null) ? 'value="' + response[key] + '" ' : "";
-        fieldHtml += '><label class="mdl-textfield__label" for="' + key + '">' + key + '</label>' +
-        '</div><br>';
-        modal.find('.modal-form-fields').append(fieldHtml);
-      }
+  modalRowFields(modal, function(){
+    var action = modal.find("form").attr("action");
+    action = action.slice(0, action.lastIndexOf("/")) + "/";
+    if(rowid) {
+      // we are editing an existing row
+      modal.find('.modal-form-fields').append('<input type="hidden" name="_method" value="put" />');
+      action += rowid;
+      $.get('/api/tables/' + tableName + "/rows/" + rowid , function(response){
+        for (key in response) {
+          if(key !== "rowid" && response[key] !== null) {
+            // populate field value for columns with data for the given row
+            var searchString = "input[name='" + key + "']";
+            $(searchString).attr("value", response[key]);
+          }
+        }
+        modal.find("form").attr("action", action);
+        componentHandler.upgradeAllRegistered();
+        // show and reset scroll position of modal
+        modal.show().scrollTop(0);
+
+      });
+    } else {
+      modal.find("form").attr("action", action);
+      componentHandler.upgradeAllRegistered();
+      modal.show().scrollTop(0);
     }
-    componentHandler.upgradeAllRegistered();
-    modal.show();
   });
 }
 
