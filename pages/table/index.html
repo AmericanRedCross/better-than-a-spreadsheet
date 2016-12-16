@@ -37,6 +37,9 @@
     z-index: 99999;
     padding: 16px 16px 0;
   }
+  .modal-container .mdl-textfield {
+    width: 500px;
+  }
   .modal-button-bar {
     text-align: right;
     margin-top: 8px;
@@ -125,21 +128,22 @@
     <div class="mdl-card mdl-shadow--16dp">
       <form class="form_type1" action="/api/tables/:tableName" method="POST">
         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-          <input class="mdl-textfield__input" type="text" name="columnName" >
+          <input class="mdl-textfield__input" type="text" pattern="[a-zA-z_][a-zA-Z0-9_]+" name="columnName" >
           <label class="mdl-textfield__label" for="columnName">Column name...</label>
+          <span class="mdl-textfield__error">Only alphanumeric and underscore. Can't start with a number.</span>
         </div><br>
-        <label class="mdl-radio mdl-js-radio" for="columnType-1">
-          <input type="radio" id="columnType-1" class="mdl-radio__button" name="columnType" value="TEXT" checked>
+        <label class="mdl-radio mdl-js-radio" for="columnType-text">
+          <input type="radio" id="columnType-text" class="mdl-radio__button" name="columnType" data-value="TEXT" value="TEXT" checked>
           <span class="mdl-radio__label">Text</span>
         </label>
         &nbsp;
-        <label class="mdl-radio mdl-js-radio" for="columnType-2">
-          <input type="radio" id="columnType-2" class="mdl-radio__button" name="columnType" value="INTEGER">
+        <label class="mdl-radio mdl-js-radio" for="columnType-integer">
+          <input type="radio" id="columnType-integer" class="mdl-radio__button" name="columnType" data-value="INTEGER" value="INTEGER">
           <span class="mdl-radio__label">Integer</span>
         </label>
         &nbsp;
-        <label class="mdl-radio mdl-js-radio" for="columnType-3">
-          <input type="radio" id="columnType-3" class="mdl-radio__button" name="columnType" value="REAL">
+        <label class="mdl-radio mdl-js-radio" for="columnType-real">
+          <input type="radio" id="columnType-real" class="mdl-radio__button" name="columnType" data-value="REAL" value="REAL">
           <span class="mdl-radio__label">Decimal</span>
         </label>
         <div class="mdl-card__actions dialog-button-bar">
@@ -178,7 +182,7 @@
           <a class="update-this-link download" download=":tableName.csv" href="/api/csv/:tableName">
             <li class="mdl-menu__item mdl-menu__action"><i class="material-icons">file_download</i> Export CSV</li>
           </a>
-          <li class="mdl-menu__item mdl-menu__action mdl-menu__item--full-bleed-divider" data-action="modal_add-column"><i class="material-icons">add_box</i> Add column</li>
+          <li id="addcolumn" class="mdl-menu__item mdl-menu__action mdl-menu__item--full-bleed-divider"><i class="material-icons">add_box</i> Add column</li>
           <a class="mdl-menu__item" href="/"><i class="material-icons">home</i> Change table</a>
         </ul>
         &nbsp; &nbsp;
@@ -215,10 +219,7 @@
 // TO DO
 // #####
 // don't reload whole table. just update the dataTable when adding a single entry or editing a row.
-
-// data field verification
-//    special characters and whatnot
-//    text versus integer
+// sync from omkserver data
 // load a template
 // no data message
 // loading icon
@@ -236,6 +237,15 @@ function getParam(name) {
         results = regex.exec(location.search);
     return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
+
+// add column modal from dropdown menu
+$("#addcolumn").click(function(e) {
+  // radio inputs lose their value after the form submit and page doesn't refresh, so replace the value
+  $("#modal_add-column").find('input[type="radio"]').each(function(index, el) {
+    $(this).val($(this).attr("data-value"));
+  });
+  $("#modal_add-column").show();
+})
 
 $(function () {
   // update page elements where necessary
@@ -255,13 +265,6 @@ $(function () {
     $(this).attr("download", download);
     var href = $(this).attr("href").replace(":tableName", tableName);
     $(this).attr("href", href);
-  });
-  // build interactions
-  $(".menu_table-actions .mdl-menu__action").each(function(index, el) {
-    $(this).click(function(e) {
-      var modalId = $(this).attr("data-action");
-      $("#" + modalId).show();
-    })
   });
   // form submissions may need to either reload everything or just update the dataTables
   // so split them out be class?
@@ -287,38 +290,32 @@ $(function () {
   loadTable()
 });
 
-function readableType(type){
-  switch (type) {
-    case "INTEGER":
-      return "(integer)";
-      break;
-    case "REAL": // "real" isn't going to make sense to the user
-      return "(decimal)";
-      break;
-    case "TEXT":
-      return "(text)";
-      break;
-    default:
-      return "";
-      break;
-  }
-}
 
 function modalRowFields(modal, cb) {
   var tableName = getParam('table');
   $.get('/api/tables/' + tableName, function(response){
     for (var i = 1; i < response.length; i++) {
       if(response[i].name !== "rowid"){
+        var fieldHtml = '<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">';
+        if (response[i].type === "TEXT") {
+          fieldHtml += '<input class="mdl-textfield__input" type="text" name="' + response[i].name + '" >'+
+            '<label class="mdl-textfield__label" for="' + response[i].name + '">' + response[i].name + ' (text)</label>';
+        }
+        if (response[i].type === "INTEGER") {
+          fieldHtml += '<input class="mdl-textfield__input" type="text" pattern="-?[0-9]*" name="' + response[i].name + '" >'+
+            '<label class="mdl-textfield__label" for="' + response[i].name + '">' + response[i].name + ' (integer)</label>' +
+            '<span class="mdl-textfield__error">Input is not an integer!</span>';
+        }
+        if (response[i].type === "REAL") {
+          fieldHtml += '<input class="mdl-textfield__input" type="text" pattern="-?[0-9]*(\.[0-9]+)?" name="' + response[i].name + '" >' +
+            '<label class="mdl-textfield__label" for="' + response[i].name + '">' + response[i].name + ' (decimal)</label>' +
+            '<span class="mdl-textfield__error">Input is not a number!</span>';
+        }
         if (response[i].type === "DATETIME"){
           // ...
-        } else {
-          var fieldHtml = '<div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">'+
-            '<input class="mdl-textfield__input" data-type="' + response[i].type + '" type="text" name="' + response[i].name + '" >'+
-            '<label class="mdl-textfield__label" for="' + response[i].name + '">' + response[i].name + ' ' + readableType(response[i].type) + '</label>'+
-            '' +
-          '</div><br>';
-          modal.find('.modal-form-fields').append(fieldHtml);
         }
+        fieldHtml += '</div><br>'
+        modal.find('.modal-form-fields').append(fieldHtml);
       }
     }
     cb();

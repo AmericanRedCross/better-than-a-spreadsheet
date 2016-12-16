@@ -62,8 +62,9 @@
       <form class="form_type1" action="/api/tables/" method="POST">
         <div class="modal-form-fields">
           <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
-            <input class="mdl-textfield__input" type="text" name="tableName" >
+            <input class="mdl-textfield__input" type="text" pattern="[a-zA-z][a-zA-Z0-9_]*" name="tableName" >
             <label class="mdl-textfield__label" for="tableName">Table name...</label>
+            <span class="mdl-textfield__error">Only alphanumeric and underscore. Start with a letter.</span>
           </div>
         </div>
         <div class="mdl-card__actions dialog-button-bar">
@@ -154,7 +155,7 @@ $(function () {
 
 
 function loadList() {
-
+    $("#tableList").empty();
     $.get('/api/tables/', function(response){
       data = response;
       for (var i=0; i<response.length; i++) {
