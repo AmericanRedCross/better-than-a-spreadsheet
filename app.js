@@ -51,22 +51,27 @@ router.route('/tables')
       res.json(data);
     });
   })
-  // create a table
   .post(function(req, res) {
-    dbHelper.createTable(req, function(err){
-      if(err) { res.send(err); }
-      else { res.send("table created") }
-    });
+    switch(req.body["_method"]) {
+      // delete a table
+      case "delete":
+        var tableName = req.body.tableName;
+        console.log(tableName)
+        dbHelper.dropTable(tableName, function(err){
+          if(err) { res.send(err); }
+          else { res.send("table deleted"); }
+        });
+        break;
+      // create a table
+      default:
+        dbHelper.createTable(req, function(err){
+          if(err) { res.send(err); }
+          else { res.send("table created") }
+        });
+        break;
+    }
   })
-  // delete a table
-  .delete(function(req, res) {
-    var tableName = req.body.tableName;
-    console.log(tableName)
-    dbHelper.dropTable(tableName, function(err){
-      if(err) { res.send(err); }
-      else { res.send("table deleted"); }
-    });
-  })
+
 
 router.route('/tables/:tableName')
   // get all the columns for a table
@@ -76,17 +81,35 @@ router.route('/tables/:tableName')
       res.json(data);
     });
   })
-  // add a column to a table
   .post(function(req, res) {
-    dbHelper.addColumn(req, function(err) {
-      if(err) { res.send(err); }
-      if(!err) { res.send("column added"); }
-    });
+    switch(req.body["_method"]) {
+      // delete column from a table
+      case "delete":
+        // ...
+        // http://stackoverflow.com/questions/5938048/delete-column-from-sqlite-table
+        break;
+      // add a column to a table
+      default:
+        dbHelper.addColumn(req.params.tableName, req.body.columnName, req.body.columnType, function(err) {
+          if(err) { res.send(err); }
+          if(!err) { res.send("column added"); }
+        });
+        break;
+    }
   })
-  // delete column from a table
-  .delete(function(req, res) {
-    // ...
-    // http://stackoverflow.com/questions/5938048/delete-column-from-sqlite-table
+
+var multer  = require('multer');
+var storage = multer.memoryStorage();
+var upload = multer({ storage : storage }).single('csvFile');
+
+router.route('/tables/:tableName/import')
+  // import a CSV
+  .post(function(req, res) {
+    upload(req,res,function(err) {
+      dbHelper.importCsv(req, function(err, data){
+        res.send(data)
+      });
+    })
   })
 
 router.route('/tables/:tableName/rows')
@@ -118,23 +141,19 @@ router.route('/tables/:tableName/rows/:rowid')
     switch(req.body["_method"]) {
       case "delete":
         // ...
-      break;
+        // delete a single row in a table
+        // will need to preserve odk UUID so as to not reimport
+        break;
       case "put":
         dbHelper.updateRow(req, function(err, data) {
           if(err) { res.send(err); }
           if(!err) { res.send("row updated"); }
         });
-      break;
+        break;
       default:
         // ...
-      break;
+        break;
     }
-
-  })
-  // delete a single row in a table
-  .delete(function(req, res) {
-    // ...
-    // will need to preserve odk UUID so as to not reimport
   })
 
 app.use('/api', router);

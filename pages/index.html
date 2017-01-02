@@ -46,6 +46,7 @@
     text-align: right;
     margin-top: 8px;
   }
+  .material-icons.md-18 { font-size: 18px; }
 
   </style>
 </head>
@@ -157,17 +158,39 @@ $(function () {
 function loadList() {
     $("#tableList").empty();
     $.get('/api/tables/', function(response){
-      data = response;
+      var systemTables = ["_syncs", "sqlite_sequence"];
       for (var i=0; i<response.length; i++) {
-        var thisHtml = '<div class="">' +
-            '<a class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" ' +
-            'href="/table/?table=' + response[i].name + '">View</a>' +
-            '<span class="table-list__title">' + response[i].name + '</span> - ' +
-            '<span class="table-list__rows">' + response[i].count + ' rows</span>' +
-        '</div>'
-        $("#tableList").append(thisHtml)
+        if(systemTables.indexOf(response[i].name) === -1) {
+          var thisHtml = '<div class="">' +
+              '<a class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect" ' +
+              'href="/table/?table=' + response[i].name + '">View</a>' +
+              '<span class="table-list__title">' + response[i].name + '</span> - ' +
+              '<span class="table-list__rows">' + response[i].count + ' rows</span>' +
+              '&nbsp;<button class="mdl-button mdl-js-button mdl-button--icon mdl-button--colored" onClick="deleteTable(' + "'" + response[i].name + "'"  + ')"><i class="material-icons md-18">delete</i></button>'+
+          '</div>'
+          $("#tableList").append(thisHtml)
+        }
       }
     });
+}
+
+function deleteTable(tableName) {
+  // http://alistapart.com/article/neveruseawarning
+  if(confirm("Are you sure you want to delete table: " + tableName + " ? This action is permanent and cannot be undone.") === true) {
+    var options = {
+      url: "/api/tables/"
+      ,data: {
+        tableName: tableName
+        ,_method: "delete"
+      }
+      ,success: function(response) {
+        toast(response);
+        loadList();
+      }
+
+    };
+    $.post(options);
+  }
 }
 
 function addTableModal(rowid) {
